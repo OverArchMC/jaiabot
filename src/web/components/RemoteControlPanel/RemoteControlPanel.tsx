@@ -8,6 +8,7 @@ import { AnalogStick, AnalogStickTypes } from "./AnalogStick/AnalogStick";
 import { SelectMenu, ControlTypes } from "./SelectMenu/SelectMenu";
 import { Dashboard } from "./Dashboard/Dashboard";
 import { DiveCommand, DiveInputs, RCDiveParameters } from "./DiveControls/DiveControls";
+import { OverdriveWarningDialog } from "./OverdriveWarningDialog";
 
 import {
     CommandType,
@@ -18,6 +19,7 @@ import {
 } from "../../types/protobuf-types";
 import { sendBotCommand, sendEngineeringCommand } from "../../utils/commands";
 import { error, success } from "../../utils/notifications";
+import { DialogActions } from "../../types/context-types";
 import { SelectChangeEvent } from "@mui/material";
 
 import "./RemoteControlPanel.less";
@@ -65,6 +67,7 @@ export default function RemoteControlPanel(props: RemoteControlPanelProps) {
         ...defaultParams.drift,
     });
     const [rcOverdrive, setRCOverdrive] = useState(false);
+    const [isOverdriveDialogVisible, setIsOverdriveDialogVisible] = useState(false);
 
     // Include useEffect dependencies to prevent interval data from going stale
     useEffect(() => {
@@ -157,7 +160,24 @@ export default function RemoteControlPanel(props: RemoteControlPanelProps) {
      * @returns {void}
      */
     const handleOverdriveToggleClick = () => {
-        setRCOverdrive(!rcOverdrive);
+        if (rcOverdrive) {
+            setRCOverdrive(false);
+        } else {
+            setIsOverdriveDialogVisible(true);
+        }
+    };
+
+    /**
+     * Closes the overdrive warning dialog and enables overdrive if confirmed
+     *
+     * @param {DialogActions} dialogAction Indicates which button was clicked
+     * @returns {void}
+     */
+    const onOverdriveDialogClose = (dialogAction: DialogActions) => {
+        setIsOverdriveDialogVisible(false);
+        if (dialogAction === DialogActions.CONFIRMED) {
+            setRCOverdrive(true);
+        }
     };
 
     /**
@@ -280,10 +300,18 @@ export default function RemoteControlPanel(props: RemoteControlPanelProps) {
         </div>
     );
 
+    const overdriveWarningDialog = (
+        <OverdriveWarningDialog
+            isVisible={isOverdriveDialogVisible}
+            onClose={onOverdriveDialogClose}
+        />
+    );
+
     switch (controlType) {
         case ControlTypes.SINGLE:
             return (
                 <>
+                    {overdriveWarningDialog}
                     {/* Gamepad component listens for Xbox controller input in background */}
                     <Gamepad
                         onAxisChange={(axisName, value) => {
@@ -319,6 +347,7 @@ export default function RemoteControlPanel(props: RemoteControlPanelProps) {
         case ControlTypes.DUAL:
             return (
                 <>
+                    {overdriveWarningDialog}
                     {/* Gamepad component listens for Xbox controller input in background */}
                     <Gamepad
                         onAxisChange={(axisName, value) => {
@@ -360,6 +389,7 @@ export default function RemoteControlPanel(props: RemoteControlPanelProps) {
         case ControlTypes.DIVE:
             return (
                 <>
+                    {overdriveWarningDialog}
                     {/* Gamepad component listens for Xbox controller input in background */}
                     <Gamepad
                         onAxisChange={(axisName, value) => {
