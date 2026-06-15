@@ -1,151 +1,80 @@
 import Mission from "../../../../data/mission_set/mission";
 import { missionSet } from "../../../../data/mission_set/mission-set";
-import { missionA, missionB, missionC } from "../../../../data/tests/__mocks__/mission-mock";
 import {
-    locationA,
-    locationB,
-    locationC,
-    locationD,
-} from "../../../../data/tests/__mocks__/waypoint-mock";
-import Task from "../../../../data/tasks/task";
-import { TaskType } from "../../../../types/protobuf-types";
-import { TaskParameterKeys } from "../../../../types/jaia-system-types";
-import {
-    saveToLocalStorage,
-    deleteFromLocalStorage,
-    listSavedMissionSets,
-    loadSnapshotFromLocalStorage,
+    listSavedMissionSetsFromHub,
+    saveToHub,
+    loadSnapshotFromHub,
+    deleteFromHub,
 } from "../mission-set-storage";
-import { UNASSIGNED_ID } from "../../../../utils/constants";
 
-describe("Exercise functions to save and load missions from localStorage", () => {
+jest.mock("../../../../utils/jaia-api", () => ({
+    jaiaAPI: {
+        listMissionSets: jest.fn(),
+        saveMissionSet: jest.fn(),
+        loadMissionSet: jest.fn(),
+        deleteMissionSet: jest.fn(),
+    },
+}));
+
+import { jaiaAPI } from "../../../../utils/jaia-api";
+
+const mockJaiaAPI = jaiaAPI as jest.Mocked<typeof jaiaAPI>;
+
+describe("Mission hub storage", () => {
     beforeEach(() => {
         missionSet.deleteAllMissions();
-        localStorage.clear();
-    });
-    test("Save and retrieve a mission set from localStorage", () => {
-        // Create test mission set
-        let mission1 = new Mission();
-        mission1.addWaypoint(locationA);
-        let waypoint1 = mission1.getWaypoint(1);
-        let task1 = new Task();
-        task1.setType(TaskType.DIVE);
-        task1.setParameter({ key: TaskParameterKeys.MAX_DEPTH, value: 13 });
-        waypoint1.setTask(task1);
-        mission1.addWaypoint(locationB);
-
-        let mission2 = new Mission();
-        mission2.addWaypoint(locationC);
-        let waypoint2 = mission2.getWaypoint(1);
-        let task2 = new Task();
-        task2.setType(TaskType.STATION_KEEP);
-        waypoint2.setTask(task2);
-        mission2.addWaypoint(locationD);
-
-        const mission1ID = missionSet.addMission(mission1);
-        expect(mission1ID).toEqual(1);
-        expect(missionSet.getMissions().size).toEqual(1);
-
-        const mission2ID = missionSet.addMission(mission2);
-        expect(mission2ID).toEqual(2);
-        expect(missionSet.getMissions().size).toEqual(2);
-
-        // Save the mission set to localStorage
-        saveToLocalStorage("Test-Mission-Set");
-
-        // Retrieve the serialized mission set from localStorage
-        const missionSetSnapshot = loadSnapshotFromLocalStorage("Test-Mission-Set");
-
-        // Update the mission set data
-        missionSet.restoreFromSnapshot(missionSetSnapshot);
-
-        // Verfiy we got what we expected
-        expect(missionSet.getMissions().size).toEqual(2);
-        expect(missionSet.getNextMissionID()).toEqual(3);
-        expect(missionSet.getName()).toEqual("Test-Mission-Set");
-
-        // Verify the 1st mission
-        let retrievedMission1 = missionSet.getMission(1);
-        expect(retrievedMission1.getMissionID()).toEqual(1);
-        expect(retrievedMission1.getWaypoint(1).getLocation().lat).toEqual(locationA.lat);
-        expect(retrievedMission1.getWaypoint(1).getLocation().lon).toEqual(locationA.lon);
-        expect(retrievedMission1.getWaypoint(1).getTask().getType()).toEqual(TaskType.DIVE);
-        expect(retrievedMission1.getWaypoint(1).getTask().getDiveParameters().max_depth).toEqual(
-            13,
-        );
-        expect(retrievedMission1.getWaypoint(2).getLocation().lat).toEqual(locationB.lat);
-        expect(retrievedMission1.getWaypoint(2).getLocation().lon).toEqual(locationB.lon);
-        expect(retrievedMission1.getWaypoint(3)).toBeUndefined();
-
-        let retrievedMission2 = missionSet.getMission(2);
-        expect(retrievedMission2.getMissionID()).toEqual(2);
-        expect(retrievedMission2.getWaypoint(1).getLocation().lat).toEqual(locationC.lat);
-        expect(retrievedMission2.getWaypoint(1).getLocation().lon).toEqual(locationC.lon);
-        expect(retrievedMission2.getWaypoint(1).getTask().getType()).toEqual(TaskType.STATION_KEEP);
-        expect(retrievedMission2.getWaypoint(2).getLocation().lat).toEqual(locationD.lat);
-        expect(retrievedMission2.getWaypoint(2).getLocation().lon).toEqual(locationD.lon);
+        jest.clearAllMocks();
     });
 
-    test("Save multiple missions sets, list them, and delete them", () => {
-        // Verify there are no saved missions sets
-        expect(listSavedMissionSets().length).toEqual(0);
+    test("listSavedMissionSetsFromHub returns names from the hub", async () => {
+        mockJaiaAPI.listMissionSets.mockResolvedValue(["mission-a", "mission-b"]);
+        const names = await listSavedMissionSetsFromHub();
+        expect(names).toEqual(["mission-a", "mission-b"]);
+        expect(mockJaiaAPI.listMissionSets).toHaveBeenCalledTimes(1);
+    });
 
-        // Create a mission set and save it to localStorage
-        missionSet.addMission(missionA);
-        missionSet.addMission(missionB);
-        expect(missionSet.getMissions().size).toEqual(2);
-        saveToLocalStorage("Test-Mission-Set-A");
+    test("saveToHub calls the API with the current mission set snapshot", async () => {
+        const mission = new Mission();
+        mission.addWaypoint({ lat: 41.0, lon: -72.0 });
+        missionSet.addMission(mission);
+        mockJaiaAPI.saveMissionSet.mockResolvedValue(undefined);
 
-        // Verify we got what we expected
-        expect(listSavedMissionSets().length).toEqual(1);
-        expect(listSavedMissionSets()[0]).toEqual("Test-Mission-Set-A");
-        expect(missionSet.getName()).toEqual("Test-Mission-Set-A");
+        await saveToHub("my-missions");
 
-        // Create another mission set and save it
-        missionSet.deleteAllMissions();
-        missionSet.addMission(missionC);
-        expect(missionSet.getMissions().size).toEqual(1);
-        saveToLocalStorage("Test-Mission-Set-B");
+        expect(mockJaiaAPI.saveMissionSet).toHaveBeenCalledTimes(1);
+        const [name, snapshot] = mockJaiaAPI.saveMissionSet.mock.calls[0];
+        expect(name).toBe("my-missions");
+        expect(snapshot.missions.length).toBe(1);
+        expect(snapshot.name).toBe("my-missions");
+    });
 
-        // Verify we got what we expected
-        expect(listSavedMissionSets().length).toEqual(2);
-        expect(listSavedMissionSets()[0]).toEqual("Test-Mission-Set-A");
-        expect(listSavedMissionSets()[1]).toEqual("Test-Mission-Set-B");
+    test("loadSnapshotFromHub returns a deserialized snapshot from the hub", async () => {
+        const fakeSnapshot = {
+            missions: [[1, { missionID: 1, waypoints: [], speeds: {}, repeats: 0 }]],
+            nextMissionID: 2,
+            missionIDInEditMode: -1,
+            missionSpeeds: { transit: 2, stationkeep_outer: 2 },
+            name: "my-missions",
+        };
+        mockJaiaAPI.loadMissionSet.mockResolvedValue(fakeSnapshot);
 
-        // Retrieve the first mission set from localStorage
-        let missionSetSnapshot = loadSnapshotFromLocalStorage("Test-Mission-Set-A");
+        const result = await loadSnapshotFromHub("my-missions");
+        expect(result).not.toBeNull();
+        expect(result?.name).toBe("my-missions");
+        expect(result?.missions.length).toBe(1);
+        expect(result?.missions[0][1]).toBeInstanceOf(Mission);
+        expect(mockJaiaAPI.loadMissionSet).toHaveBeenCalledWith("my-missions");
+    });
 
-        // Update the mission set data
-        missionSet.restoreFromSnapshot(missionSetSnapshot);
+    test("loadSnapshotFromHub returns null when the hub has no entry", async () => {
+        mockJaiaAPI.loadMissionSet.mockResolvedValue(null);
+        const result = await loadSnapshotFromHub("nonexistent");
+        expect(result).toBeNull();
+    });
 
-        expect(missionSet.getMissions().size).toEqual(2);
-
-        // Delete the first set from localStorage
-        expect(deleteFromLocalStorage("Test-Mission-Set-A")).toEqual(true);
-        expect(listSavedMissionSets().length).toEqual(1);
-        expect(listSavedMissionSets()[0]).toEqual("Test-Mission-Set-B");
-
-        // Save another mission set and verify saved list is sorted
-        missionSet.deleteAllMissions();
-        missionSet.addMission(missionC);
-        expect(missionSet.getMissions().size).toEqual(1);
-        saveToLocalStorage("Test-Mission-Set-A");
-
-        // Verify we got what we expected
-        expect(listSavedMissionSets().length).toEqual(2);
-        expect(listSavedMissionSets()[0]).toEqual("Test-Mission-Set-A");
-        expect(listSavedMissionSets()[1]).toEqual("Test-Mission-Set-B");
-
-        // Try to delete a mission set that is not saved
-        expect(deleteFromLocalStorage("Test-Mission-Set-C")).toEqual(false);
-
-        // Try to retrieve a mission set that is not saved
-        missionSetSnapshot = loadSnapshotFromLocalStorage("Test-Mission-Set");
-        // Verify defaults
-        expect(missionSetSnapshot.missions).toEqual([]);
-        expect(missionSetSnapshot.nextMissionID).toBe(0);
-        expect(missionSetSnapshot.missionIDInEditMode).toEqual(UNASSIGNED_ID);
-        expect(missionSetSnapshot.missionSpeeds).toEqual({});
-        expect(missionSetSnapshot.name).toBe("");
+    test("deleteFromHub calls the API with the correct name", async () => {
+        mockJaiaAPI.deleteMissionSet.mockResolvedValue(undefined);
+        await deleteFromHub("my-missions");
+        expect(mockJaiaAPI.deleteMissionSet).toHaveBeenCalledWith("my-missions");
     });
 });

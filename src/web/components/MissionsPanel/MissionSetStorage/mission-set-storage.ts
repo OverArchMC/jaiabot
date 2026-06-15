@@ -9,6 +9,7 @@ import Task from "../../../data/tasks/task";
 import { TaskType } from "../../../types/protobuf-types";
 import { LegacyMissionInterface, LegacyRunInterface } from "../../../types/legacy-types";
 import { UNASSIGNED_ID } from "../../../utils/constants";
+import { jaiaAPI } from "../../../utils/jaia-api";
 
 export enum LoadResultType {
     CURRENT_FORMAT = "CURRENT_FORMAT",
@@ -20,79 +21,78 @@ export interface LoadSnapshotResult {
     resultType: LoadResultType;
 }
 
+// ── Hub storage (server-side persistence) ──────────────────────────────────
+
 /**
- * Saves the current mission set to local storage
+ * Returns all saved mission set names from the hub, sorted alphabetically
  *
- * @param {string} name Name to use for storing the mission set
- * @returns {void}
+ * @returns {Promise<string[]>} Alphabetically sorted list of saved mission set names
  */
-export function saveToLocalStorage(name: string) {
-    missionSet.setName(name);
-    // Read the saved mission sets from  local storage (or start fresh)
-    const missionSets = JSON.parse(localStorage.getItem("missionSets") || "{}");
-    missionSets[name] = missionSet.captureSnapshot();
-    localStorage.setItem("missionSets", JSON.stringify(missionSets));
+export async function listSavedMissionSetsFromHub(): Promise<string[]> {
+    return jaiaAPI.listMissionSets();
 }
 
 /**
- * Loads a single mission set from localStorage by name and returns it as MissionSetSnapshot.
+ * Saves the current mission set to the hub under the given name
  *
- * @param {string} saveName The key of the mission set to retrieve
- * @returns {MissionSetSnapshot} Snapshot of mission set
- *
- * @notes
- * Called by UI code, snapshot is sent to the reducer/action handler
+ * @param {string} name Name to save the mission set under on the hub
+ * @returns {Promise<void>}
  */
-export function loadSnapshotFromLocalStorage(saveName: string) {
-    const allMissionSets = JSON.parse(localStorage.getItem("missionSets") || "{}");
-    const targetSet = allMissionSets[saveName] || {};
+export async function saveToHub(name: string): Promise<void> {
+    missionSet.setName(name);
+    await jaiaAPI.saveMissionSet(name, missionSet.captureSnapshot());
+}
+
+/**
+ * Loads a named mission set snapshot from the hub
+ *
+ * @param {string} name Name of the saved mission set to load
+ * @returns {Promise<MissionSetSnapshot | null>} The loaded snapshot, or null if not found
+ */
+export async function loadSnapshotFromHub(name: string): Promise<MissionSetSnapshot | null> {
+    const raw = await jaiaAPI.loadMissionSet(name);
+    if (!raw) {
+        return null;
+    }
+    return deserializeMissionSetSnapshot(raw);
+}
+
+/**
+ * Deletes a named mission set from the hub
+ *
+ * @param {string} name Name of the saved mission set to delete
+ * @returns {Promise<void>}
+ */
+export async function deleteFromHub(name: string): Promise<void> {
+    await jaiaAPI.deleteMissionSet(name);
+}
+
+// ── File export / import ────────────────────────────────────────────────────
+
+/**
+ * Deserializes raw hub or snapshot JSON into a MissionSetSnapshot with Mission instances.
+ *
+ * @param {any} raw Raw mission set data from the hub
+ * @returns {MissionSetSnapshot} Snapshot of mission set
+ */
+function deserializeMissionSetSnapshot(raw: any): MissionSetSnapshot {
     const missions: [number, Mission][] = [];
-    if (Array.isArray(targetSet.missions)) {
+    if (Array.isArray(raw.missions)) {
         missions.push(
-            ...targetSet.missions.map(([missionID, serializedMission]: [any, any]) => [
+            ...raw.missions.map(([missionID, serializedMission]: [any, any]) => [
                 Number(missionID),
                 Mission.fromJSON(serializedMission),
             ]),
         );
     }
 
-    const snapshot: MissionSetSnapshot = {
+    return {
         missions: missions,
-        nextMissionID: targetSet.nextMissionID ?? 0,
-        missionIDInEditMode: targetSet.missionIDInEditMode ?? UNASSIGNED_ID,
-        missionSpeeds: targetSet.missionSpeeds ?? {},
-        name: targetSet.name ?? "",
+        nextMissionID: raw.nextMissionID ?? 0,
+        missionIDInEditMode: raw.missionIDInEditMode ?? UNASSIGNED_ID,
+        missionSpeeds: raw.missionSpeeds ?? {},
+        name: raw.name ?? "",
     };
-    return snapshot;
-}
-
-/**
- * Deletes a saved mission set from localStorage
- *
- * @param {string} name Identifies the mission set to delete
- * @returns {boolean} False if the mission set was not found
- */
-export function deleteFromLocalStorage(name: string) {
-    const allMissionSets = JSON.parse(localStorage.getItem("missionSets") || "{}");
-
-    if (!(name in allMissionSets)) {
-        return false;
-    }
-
-    delete allMissionSets[name];
-
-    localStorage.setItem("missionSets", JSON.stringify(allMissionSets));
-    return true;
-}
-
-/**
- * Provides an array of all saved mission set names in localStorage, sorted alphabetically.
- *
- * @returns {string[]} Names of all saved missions sets
- */
-export function listSavedMissionSets() {
-    const allMissionSets = JSON.parse(localStorage.getItem("missionSets") || "{}");
-    return Object.keys(allMissionSets).sort((a, b) => a.localeCompare(b));
 }
 
 /**
