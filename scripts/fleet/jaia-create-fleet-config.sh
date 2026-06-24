@@ -311,7 +311,7 @@ BEGIN {
 }
 {
     # Skip lines containing keys to be excluded
-    if ($2 ~ /\/(bot_id|hub_id|type|fleet_id|mode|debconf_state_common|debconf_state_hub|debconf_state_bot|warp)/) next;
+    if ($2 ~ /\/(bot_id|bot_vin|hub_id|type|fleet_id|mode|debconf_state_common|debconf_state_hub|debconf_state_bot|warp)/) next;
 
     # Print debconf entry
 
