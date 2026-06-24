@@ -43,8 +43,8 @@ Description: Bot identification number
 Template: jaiabot-embedded/bot_vin
 Type: string
 Default:
-Description: Bot Vehicle Identification Number (VIN)
-  Unique identifier for this physical bot, used by production and engineering teams.
+Description: Bot VIN (Vehicle Identification Number)
+  The unique VIN for this bot, recorded for the production and engineering teams.
   To change in the future, run "sudo dpkg-reconfigure jaiabot-embedded"
 
 Template: jaiabot-embedded/hub_id

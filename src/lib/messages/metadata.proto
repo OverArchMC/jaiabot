@@ -75,10 +75,6 @@ message DeviceMetadata
         (jaia.field).rest_api.presence = GUARANTEED
     ];
 
-    optional string bot_vin = 19 [
-        (jaia.field).rest_api.presence = GUARANTEED
-    ];
-
 }
 
 message QueryDeviceMetaData

@@ -93,14 +93,7 @@ void jaiabot::apps::Metadata::publish_metadata()
     if (cfg().has_hub_id())
         metadata.set_hub_id(cfg().hub_id());
     else if (cfg().has_bot_id())
-    {
         metadata.set_bot_id(cfg().bot_id());
-        if (const char* bot_vin = std::getenv("jaia_bot_vin"))
-        {
-            if (bot_vin[0] != '\0')
-                metadata.set_bot_vin(bot_vin);
-        }
-    }
 
     glog.is_verbose() && glog << "DeviceMetadata: " << metadata.ShortDebugString() << std::endl;
 
