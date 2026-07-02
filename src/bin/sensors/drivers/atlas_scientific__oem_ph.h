@@ -27,6 +27,7 @@
 #include "jaiabot/messages/health.pb.h"
 #include "jaiabot/messages/sensor/atlas_scientific__oem_ph.pb.h"
 #include "jaiabot/messages/sensor/sensor_core.pb.h"
+#include "jaiabot/utils/hampel_filter.h"
 #include <goby/zeromq/application/multi_thread.h>
 
 namespace jaiabot
@@ -50,6 +51,8 @@ class AtlasScientificOEMPHDriver
     int32_t sample_rate_{10};
     int32_t report_timeout_{20};
     int32_t resend_cfg_timeout_{20};
+    jaiabot::utils::HampelFilter ph_filter_;
+    jaiabot::utils::HampelFilter temperature_filter_;
 };
 
 } // namespace apps

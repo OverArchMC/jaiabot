@@ -21,6 +21,11 @@ message PressureTemperatureData
         units { derived_dimensions: "temperature" system: "celsius" }
     }];
     required PressureSensorType sensor_type = 3;
+    optional double pressure_filtered = 4
+        [(dccl.field) = { units { prefix: "deci" unit: "metric::bar" } }];
+    optional double temperature_filtered = 5 [(dccl.field) = {
+        units { derived_dimensions: "temperature" system: "celsius" }
+    }];
 }
 
 message PressureAdjustedData
@@ -42,6 +47,14 @@ message PressureAdjustedData
         units: { derived_dimensions: "length" }
     }];
     optional double depth = 5 [(dccl.field) = {
+        min: -1
+        max: 100
+        precision: 1
+        units: { derived_dimensions: "length" }
+    }];
+    optional double pressure_filtered = 6
+        [(dccl.field) = { units { prefix: "deci" unit: "metric::bar" } }];
+    optional double depth_filtered = 7 [(dccl.field) = {
         min: -1
         max: 100
         precision: 1

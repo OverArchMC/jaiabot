@@ -24,6 +24,8 @@
 
 #include "atlas_scientific__oem_ph.h"
 #include "jaiabot/groups.h"
+#include "jaiabot/utils/hampel_filter.h"
+#include "jaiabot/utils/hampel_filter_config_util.h"
 #include "jaiabot/utils/ph_temperature_compensation.h"
 
 using goby::glog;
@@ -48,6 +50,17 @@ jaiabot::apps::AtlasScientificOEMPHDriver::AtlasScientificOEMPHDriver(
     report_timeout_ = config.report_timeout_seconds();
     resend_cfg_timeout_ = config.resend_cfg_timeout_seconds();
 
+    if (config.has_ph_filter())
+    {
+        ph_filter_ = jaiabot::utils::HampelFilter(
+            jaiabot::utils::hampel_filter_config_from_proto(config.ph_filter()));
+    }
+    if (config.has_temperature_filter())
+    {
+        temperature_filter_ = jaiabot::utils::HampelFilter(
+            jaiabot::utils::hampel_filter_config_from_proto(config.temperature_filter()));
+    }
+
     // configure our sensor
     send_cfg();
 }
@@ -63,14 +76,33 @@ void jaiabot::apps::AtlasScientificOEMPHDriver::receive_data(
     if (ph_data.has_ph_raw())
     {
         ph_msg.set_ph_raw(ph_data.ph_raw());
+
+        double filtered_ph;
+        if (ph_filter_.filter(ph_data.ph_raw(), filtered_ph) !=
+            jaiabot::utils::HampelFilterResult::OUTLIER)
+        {
+            ph_msg.set_ph_filtered(filtered_ph);
+        }
     }
     if (ph_data.has_temperature())
     {
         ph_msg.set_temperature(ph_data.temperature());
+
+        double filtered_temperature;
+        if (temperature_filter_.filter(ph_data.temperature(), filtered_temperature) !=
+            jaiabot::utils::HampelFilterResult::OUTLIER)
+        {
+            ph_msg.set_temperature_filtered(filtered_temperature);
+        }
     }
+    const double ph_for_compensation =
+        ph_msg.has_ph_filtered() ? ph_msg.ph_filtered() : ph_msg.ph_raw();
+    const double temperature_for_compensation = ph_msg.has_temperature_filtered()
+                                                    ? ph_msg.temperature_filtered()
+                                                    : ph_msg.temperature();
     if (ph_data.has_ph_raw() && ph_data.has_temperature())
     {
-        const double ph = temperature_compensated_ph(ph_data.ph_raw(), ph_data.temperature());
+        const double ph = temperature_compensated_ph(ph_for_compensation, temperature_for_compensation);
         ph_msg.set_ph(ph);
     }
     if (ph_data.has_temperature_voltage())

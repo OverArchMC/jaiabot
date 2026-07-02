@@ -8,6 +8,7 @@ set(SENSOR_PROTOS
   sensor/salinity.proto
   sensor/sensor_core.proto
   sensor/configuration.proto
+  sensor/hampel_filter_config.proto
   sensor/metadata.proto
   sensor/catalog.proto
   sensor/atlas_scientific__oem_ec.proto

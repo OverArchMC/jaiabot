@@ -122,6 +122,20 @@ path_descriptors = [
         description='Uncompensated water pressure as reported directly from the sensor.'
     ),
     PathDescriptor(
+        name='Filtered Pressure',
+        path_suffix='PressureTemperatureData/pressure_filtered',
+        units='dbar',
+        frequency=10,
+        description='Pressure after Hampel outlier rejection; omitted when sample is an outlier.'
+    ),
+    PathDescriptor(
+        name='Filtered Temperature',
+        path_suffix='PressureTemperatureData/temperature_filtered',
+        units='°C',
+        frequency=10,
+        description='Temperature after Hampel outlier rejection; omitted when sample is an outlier.'
+    ),
+    PathDescriptor(
         name='Adjusted Pressure',
         path_suffix='PressureAdjustedData/pressure_adjusted',
         units='dbar',
@@ -134,6 +148,13 @@ path_descriptors = [
         units='m',
         frequency=10,
         description='Calculated depth.'
+    ),
+    PathDescriptor(
+        name='Filtered Depth',
+        path_suffix='PressureAdjustedData/depth_filtered',
+        units='m',
+        frequency=10,
+        description='Depth computed from filtered pressure; omitted when pressure sample is an outlier.'
     ),
     PathDescriptor(
         name='Conductivity',
@@ -157,11 +178,25 @@ path_descriptors = [
         description='Raw conductivity as reported directly from the sensor.'
     ),
     PathDescriptor(
+        name='Filtered Conductivity',
+        path_suffix='SalinityData/conductivity_filtered',
+        units='μS/cm',
+        frequency=10,
+        description='Conductivity after Hampel outlier rejection; omitted when sample is an outlier.'
+    ),
+    PathDescriptor(
         name='Raw Conductivity',
         path_suffix='AtlasScientificOEMEC/conductivity_raw',
         units='μS/cm',
         frequency=10,
         description='Raw conductivity as reported directly from the sensor.'
+    ),
+    PathDescriptor(
+        name='Filtered Conductivity',
+        path_suffix='AtlasScientificOEMEC/conductivity_filtered',
+        units='μS/cm',
+        frequency=10,
+        description='Conductivity after Hampel outlier rejection; omitted when sample is an outlier.'
     ),
     PathDescriptor(
         name='Salinity',
@@ -206,6 +241,13 @@ path_descriptors = [
         description='Raw pH as reported directly from the sensor.'
     ),
     PathDescriptor(
+        name='Filtered pH',
+        path_suffix='AtlasScientificOEMpH/ph_filtered',
+        units='pH',
+        frequency=10,
+        description='pH after Hampel outlier rejection; omitted when sample is an outlier.'
+    ),
+    PathDescriptor(
         name='Temperature (pH Probe)',
         path_suffix='AtlasScientificOEMpH/temperature',
         units='°C',
@@ -234,6 +276,13 @@ path_descriptors = [
         description='Dissolved oxygen as reported directly from the sensor.'
     ),
     PathDescriptor(
+        name='Filtered Dissolved Oxygen',
+        path_suffix='AtlasScientificOEMDO/do_filtered',
+        units='mg/L',
+        frequency=10,
+        description='Dissolved oxygen after Hampel outlier rejection; omitted when sample is an outlier.'
+    ),
+    PathDescriptor(
         name='Dissolved Oxygen Saturation',
         path_suffix='AtlasScientificOEMDO/do_saturation_percent',
         units='%',
@@ -253,6 +302,13 @@ path_descriptors = [
         units='See fluorometer spec. sheet.',
         frequency=10,
         description='Concentration as reported by the fluorometer.'
+    ),
+    PathDescriptor(
+        name='Filtered Fluorometer Concentration',
+        path_suffix='TurnerCFluor/concentration_filtered',
+        units='See fluorometer spec. sheet.',
+        frequency=10,
+        description='Concentration after Hampel outlier rejection; omitted when sample is an outlier.'
     ),
     PathDescriptor(
         name='Fluorometer Concentration Voltage',

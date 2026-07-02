@@ -28,6 +28,8 @@
 
 #include "jaiabot/groups.h"
 #include "jaiabot/messages/sensor/pressure_temperature.pb.h"
+#include "jaiabot/utils/hampel_filter.h"
+#include "jaiabot/utils/hampel_filter_config_util.h"
 
 using goby::glog;
 namespace si = boost::units::si;
@@ -52,6 +54,17 @@ jaiabot::apps::BlueRoboticsBar30Driver::BlueRoboticsBar30Driver(
     report_timeout_ = config.report_timeout_seconds();
     resend_cfg_timeout_ = config.resend_cfg_timeout_seconds();
 
+    if (config.has_pressure_filter())
+    {
+        pressure_filter_ = jaiabot::utils::HampelFilter(
+            jaiabot::utils::hampel_filter_config_from_proto(config.pressure_filter()));
+    }
+    if (config.has_temperature_filter())
+    {
+        temperature_filter_ = jaiabot::utils::HampelFilter(
+            jaiabot::utils::hampel_filter_config_from_proto(config.temperature_filter()));
+    }
+
     // configure our sensor
     send_cfg();
 }
@@ -68,15 +81,33 @@ void jaiabot::apps::BlueRoboticsBar30Driver::receive_data(
 
     if (bar30_data.has_pressure())
     {
-        pressure_temperature_data.set_pressure_raw_with_units(bar30_data.pressure() * si::milli *
-                                                              goby::util::seawater::bar);
+        const auto raw_pressure = bar30_data.pressure() * si::milli * goby::util::seawater::bar;
+        pressure_temperature_data.set_pressure_raw_with_units(raw_pressure);
+
+        double filtered_pressure;
+        if (pressure_filter_.filter(raw_pressure.value(), filtered_pressure) !=
+            jaiabot::utils::HampelFilterResult::OUTLIER)
+        {
+            pressure_temperature_data.set_pressure_filtered_with_units(filtered_pressure * si::milli *
+                                                                         goby::util::seawater::bar);
+        }
     }
 
     if (bar30_data.has_temperature())
     {
-        pressure_temperature_data.set_temperature_with_units(
+        const auto raw_temperature =
             bar30_data.temperature() *
-            boost::units::absolute<boost::units::celsius::temperature>());
+            boost::units::absolute<boost::units::celsius::temperature>();
+        pressure_temperature_data.set_temperature_with_units(raw_temperature);
+
+        double filtered_temperature;
+        if (temperature_filter_.filter(raw_temperature.value(), filtered_temperature) !=
+            jaiabot::utils::HampelFilterResult::OUTLIER)
+        {
+            pressure_temperature_data.set_temperature_filtered_with_units(
+                filtered_temperature *
+                boost::units::absolute<boost::units::celsius::temperature>());
+        }
     }
 
     interprocess().publish<jaiabot::groups::pressure_temperature>(pressure_temperature_data);

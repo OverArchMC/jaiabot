@@ -139,12 +139,20 @@ struct MissionManagerStateMachine
     {
         jaiabot::protobuf::PressureAdjustedData pa;
 
-        set_current_pressure(pressure_temperature.pressure_raw());
+        const double pressure = pressure_temperature.has_pressure_filtered()
+                                    ? pressure_temperature.pressure_filtered()
+                                    : pressure_temperature.pressure_raw();
+
+        set_current_pressure(pressure);
 
         pa.set_pressure_raw(pressure_temperature.pressure_raw());
+        if (pressure_temperature.has_pressure_filtered())
+        {
+            pa.set_pressure_filtered(pressure_temperature.pressure_filtered());
+        }
         pa.set_pressure_raw_before_dive(start_of_dive_pressure());
 
-        auto pressure_adjusted = pa.pressure_raw() - pa.pressure_raw_before_dive();
+        auto pressure_adjusted = pressure - pa.pressure_raw_before_dive();
 
         goby::glog.is_debug2() &&
             goby::glog << "Pressure RAW: " << pa.pressure_raw()
@@ -161,6 +169,10 @@ struct MissionManagerStateMachine
 
         pa.set_sensor_depth_with_units(sensor_depth);
         pa.set_depth_with_units(depth);
+        if (pressure_temperature.has_pressure_filtered())
+        {
+            pa.set_depth_filtered_with_units(depth);
+        }
 
         interprocess().publish<jaiabot::groups::pressure_adjusted>(pa);
     }

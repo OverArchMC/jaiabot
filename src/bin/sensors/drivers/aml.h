@@ -26,6 +26,7 @@
 #include "config.pb.h"
 #include "jaiabot/messages/health.pb.h"
 #include "jaiabot/messages/sensor/sensor_core.pb.h"
+#include "jaiabot/utils/hampel_filter.h"
 #include <goby/middleware/application/simple_thread.h>
 
 namespace jaiabot
@@ -52,6 +53,8 @@ class AMLSensorDriver
     int32_t resend_cfg_timeout_{20};
     sensor::protobuf::AML last_aml_reading;
     bool received_aml_reading_{false};
+    jaiabot::utils::HampelFilter conductivity_filter_;
+    jaiabot::utils::HampelFilter temperature_filter_;
 };
 
 } // namespace apps

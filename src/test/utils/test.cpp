@@ -1,6 +1,7 @@
 #define BOOST_TEST_MODULE jaiabot_test_utils
 #include "jaiabot/utils/derived_salinity.h"
 #include "jaiabot/utils/dissolved_oxygen_compensation.h"
+#include "jaiabot/utils/hampel_filter.h"
 #include "jaiabot/utils/ph_temperature_compensation.h"
 #include "jaiabot/utils/specific_conductivity.h"
 #include <boost/test/included/unit_test.hpp>
@@ -364,6 +365,107 @@ BOOST_AUTO_TEST_CASE(test_specific_conductivity)
 
         BOOST_CHECK_CLOSE(specific_conductivity, test.expected_specific_conductivity, 2);
     }
+}
+
+BOOST_AUTO_TEST_CASE(test_hampel_median_and_mad)
+{
+    BOOST_CHECK_CLOSE(median({3.0, 1.0, 2.0}), 2.0, 0.00001);
+    BOOST_CHECK_CLOSE(median({4.0, 1.0, 3.0, 2.0}), 2.5, 0.00001);
+    BOOST_CHECK_CLOSE(median_absolute_deviation({1.0, 1.0, 1.0, 3.0}, 1.0), 0.0, 0.00001);
+    BOOST_CHECK_CLOSE(median_absolute_deviation({1.0, 2.0, 3.0, 4.0}, 2.5), 1.0, 0.00001);
+}
+
+BOOST_AUTO_TEST_CASE(test_hampel_passes_clean_data)
+{
+    HampelFilter filter;
+    double filtered = 0.0;
+
+    for (int i = 0; i < 10; ++i)
+    {
+        const auto result = filter.filter(5.0, filtered);
+        BOOST_CHECK(result != HampelFilterResult::OUTLIER);
+        BOOST_CHECK_CLOSE(filtered, 5.0, 0.00001);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(test_hampel_rejects_single_spike)
+{
+    HampelFilter filter;
+    double filtered = 0.0;
+
+    for (int i = 0; i < 6; ++i)
+    {
+        BOOST_CHECK(filter.filter(1.0, filtered) != HampelFilterResult::OUTLIER);
+    }
+
+    BOOST_CHECK(filter.filter(100.0, filtered) == HampelFilterResult::OUTLIER);
+    BOOST_CHECK(filter.filter(1.0, filtered) != HampelFilterResult::OUTLIER);
+    BOOST_CHECK_CLOSE(filtered, 1.0, 0.00001);
+}
+
+BOOST_AUTO_TEST_CASE(test_hampel_configurable_threshold)
+{
+    HampelFilter strict_filter(HampelFilterConfig{.window_size = 7, .mad_threshold = 1.0});
+    HampelFilter lenient_filter(HampelFilterConfig{.window_size = 7, .mad_threshold = 10.0});
+    double filtered = 0.0;
+
+    for (int i = 0; i < 6; ++i)
+    {
+        strict_filter.filter(1.0, filtered);
+        lenient_filter.filter(1.0, filtered);
+    }
+
+    BOOST_CHECK(strict_filter.filter(5.0, filtered) == HampelFilterResult::OUTLIER);
+    BOOST_CHECK(lenient_filter.filter(5.0, filtered) != HampelFilterResult::OUTLIER);
+}
+
+BOOST_AUTO_TEST_CASE(test_hampel_warmup)
+{
+    HampelFilter filter(HampelFilterConfig{.window_size = 7});
+    double filtered = 0.0;
+
+    for (int i = 0; i < 6; ++i)
+    {
+        BOOST_CHECK(filter.filter(1.0, filtered) == HampelFilterResult::WARMUP);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(test_hampel_outlier_not_in_window)
+{
+    HampelFilter filter;
+    double filtered = 0.0;
+
+    for (int i = 0; i < 6; ++i)
+    {
+        filter.filter(1.0, filtered);
+    }
+    filter.filter(100.0, filtered);
+    BOOST_CHECK(filter.filter(1.0, filtered) != HampelFilterResult::OUTLIER);
+}
+
+BOOST_AUTO_TEST_CASE(test_hampel_constant_series)
+{
+    HampelFilter filter;
+    double filtered = 0.0;
+
+    for (int i = 0; i < 10; ++i)
+    {
+        BOOST_CHECK(filter.filter(42.0, filtered) != HampelFilterResult::OUTLIER);
+        BOOST_CHECK_CLOSE(filtered, 42.0, 0.00001);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(test_hampel_reset)
+{
+    HampelFilter filter;
+    double filtered = 0.0;
+
+    for (int i = 0; i < 6; ++i)
+    {
+        filter.filter(1.0, filtered);
+    }
+    filter.reset();
+    BOOST_CHECK(filter.filter(100.0, filtered) == HampelFilterResult::WARMUP);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

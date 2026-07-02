@@ -19,6 +19,8 @@ The MCU should do the minimum amount of processing required to provide raw data 
 
 All data processing, metadata tagging, applying calibration, QA/QC is done in `jaiabot_sensors`.
 
+Live outlier rejection uses a [Hampel filter](page015_sensor_data_filtering.md) on sensor scalar fields. Raw readings are always logged; filtered values are published in separate protobuf fields.
+
 ## Communication with MCU
 
 The MCU/Raspberry Pi communications is performed over a serial connection using the Consistent Overhead Byte Stuffing (COBS) protocol for packetization. Each COBS message is composed of an encoded Protobuf message followed by a CRC32 for error detection:

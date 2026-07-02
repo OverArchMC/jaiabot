@@ -27,6 +27,7 @@
 #include "jaiabot/messages/health.pb.h"
 #include "jaiabot/messages/sensor/sensor_core.pb.h"
 #include "jaiabot/messages/sensor/turner__c_fluor.pb.h"
+#include "jaiabot/utils/hampel_filter.h"
 #include <goby/zeromq/application/multi_thread.h>
 
 namespace jaiabot
@@ -51,6 +52,7 @@ class TurnerCFluorDriver
     int32_t report_timeout_{20};
     int32_t resend_cfg_timeout_{20};
     jaiabot::sensor::protobuf::FluorCoefficients fluorometer_coefficients_;
+    jaiabot::utils::HampelFilter concentration_filter_;
 };
 
 } // namespace apps

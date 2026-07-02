@@ -28,6 +28,7 @@ import "goby/middleware/protobuf/udp_config.proto";
 
 import "jaiabot/messages/echo.proto";
 import "jaiabot/messages/imu.proto";
+import "jaiabot/messages/sensor/hampel_filter_config.proto";
 
 package jaiabot.config;
 
@@ -63,6 +64,8 @@ message UDPGateway
     
     // Bar30
     optional bool bar30_enabled = 23 [default = true];
+    optional jaiabot.sensor.protobuf.HampelFilterConfig pressure_filter = 24;
+    optional jaiabot.sensor.protobuf.HampelFilterConfig temperature_filter = 25;
 
     optional bool in_simulation = 11 [default = true];
 }

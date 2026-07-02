@@ -32,6 +32,8 @@
 #include "jaiabot/groups.h"
 #include "jaiabot/messages/health.pb.h"
 #include "jaiabot/messages/sensor/aml.pb.h"
+#include "jaiabot/utils/hampel_filter.h"
+#include "jaiabot/utils/hampel_filter_config_util.h"
 
 using goby::glog;
 
@@ -54,7 +56,18 @@ jaiabot::apps::AMLSensorDriver::AMLSensorDriver(
 
   // Set report timeout on missing report
   report_timeout_ = config.report_timeout_seconds();
-  resend_cfg_timeout_ = config.resend_cfg_timeout_seconds(); 
+  resend_cfg_timeout_ = config.resend_cfg_timeout_seconds();
+
+  if (config.has_conductivity_filter())
+  {
+      conductivity_filter_ = jaiabot::utils::HampelFilter(
+          jaiabot::utils::hampel_filter_config_from_proto(config.conductivity_filter()));
+  }
+  if (config.has_temperature_filter())
+  {
+      temperature_filter_ = jaiabot::utils::HampelFilter(
+          jaiabot::utils::hampel_filter_config_from_proto(config.temperature_filter()));
+  }
 
   // Configure the sensor
   send_cfg();
@@ -76,11 +89,25 @@ void jaiabot::apps::AMLSensorDriver::receive_data(
     if (aml_data.has_conductivity())
     {
         aml.set_conductivity(aml_data.conductivity());
+
+        double filtered_conductivity;
+        if (conductivity_filter_.filter(aml_data.conductivity(), filtered_conductivity) !=
+            jaiabot::utils::HampelFilterResult::OUTLIER)
+        {
+            aml.set_conductivity_filtered(filtered_conductivity);
+        }
     }
 
     if (aml_data.has_temperature())
     {
         aml.set_temperature(aml_data.temperature());
+
+        double filtered_temperature;
+        if (temperature_filter_.filter(aml_data.temperature(), filtered_temperature) !=
+            jaiabot::utils::HampelFilterResult::OUTLIER)
+        {
+            aml.set_temperature_filtered(filtered_temperature);
+        }
     }
 
     interprocess().publish<jaiabot::groups::aml>(aml);

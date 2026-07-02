@@ -29,6 +29,7 @@
 #include "jaiabot/messages/sensor/atlas_scientific__oem_ph.pb.h"
 #include "jaiabot/messages/sensor/pressure_temperature.pb.h"
 #include "jaiabot/messages/sensor/sensor_core.pb.h"
+#include "jaiabot/utils/hampel_filter.h"
 
 #include <goby/zeromq/application/multi_thread.h>
 
@@ -56,6 +57,8 @@ class AtlasScientificOEMECDriver
     // These are used for calculating the salinity from the conductivity
     sensor::protobuf::AtlasScientificOEMpH last_ph_data_;
     jaiabot::protobuf::PressureAdjustedData last_pressure_adjusted_data_;
+    jaiabot::utils::HampelFilter conductivity_filter_;
+    jaiabot::utils::HampelFilter salinity_filter_;
 };
 
 } // namespace apps

@@ -25,6 +25,8 @@
 #include "atlas_scientific__oem_ec.h"
 #include "jaiabot/groups.h"
 #include "jaiabot/utils/derived_salinity.h"
+#include "jaiabot/utils/hampel_filter.h"
+#include "jaiabot/utils/hampel_filter_config_util.h"
 #include "jaiabot/utils/specific_conductivity.h"
 
 using goby::glog;
@@ -57,6 +59,17 @@ jaiabot::apps::AtlasScientificOEMECDriver::AtlasScientificOEMECDriver(
     report_timeout_ = config.report_timeout_seconds();
     resend_cfg_timeout_ = config.resend_cfg_timeout_seconds();
 
+    if (config.has_conductivity_filter())
+    {
+        conductivity_filter_ = jaiabot::utils::HampelFilter(
+            jaiabot::utils::hampel_filter_config_from_proto(config.conductivity_filter()));
+    }
+    if (config.has_salinity_filter())
+    {
+        salinity_filter_ = jaiabot::utils::HampelFilter(
+            jaiabot::utils::hampel_filter_config_from_proto(config.salinity_filter()));
+    }
+
     // configure our sensor
     send_cfg();
 }
@@ -71,6 +84,13 @@ void jaiabot::apps::AtlasScientificOEMECDriver::receive_data(
     if (ec_data.has_conductivity_raw())
     {
         ec_msg.set_conductivity_raw(ec_data.conductivity_raw());
+
+        double filtered_conductivity;
+        if (conductivity_filter_.filter(ec_data.conductivity_raw(), filtered_conductivity) !=
+            jaiabot::utils::HampelFilterResult::OUTLIER)
+        {
+            ec_msg.set_conductivity_filtered(filtered_conductivity);
+        }
     }
     if (ec_data.has_total_dissolved_solids())
     {
@@ -79,20 +99,30 @@ void jaiabot::apps::AtlasScientificOEMECDriver::receive_data(
     if (ec_data.has_salinity_raw())
     {
         ec_msg.set_salinity_raw(ec_data.salinity_raw());
+
+        double filtered_salinity;
+        if (salinity_filter_.filter(ec_data.salinity_raw(), filtered_salinity) !=
+            jaiabot::utils::HampelFilterResult::OUTLIER)
+        {
+            ec_msg.set_salinity_filtered(filtered_salinity);
+        }
     }
+    const double conductivity_for_compensation =
+        ec_msg.has_conductivity_filtered() ? ec_msg.conductivity_filtered() : ec_msg.conductivity_raw();
     // Using do data temperature because the bar30 is not
     // reporting accurately enough embedded into the midbody
-    if (last_ph_data_.has_temperature())
+    if (last_ph_data_.has_temperature() && ec_data.has_conductivity_raw())
     {
-        const double specific_conductivity =
-            calculate_specific_conductivity(ec_msg.conductivity_raw(), last_ph_data_.temperature());
+        const double specific_conductivity = calculate_specific_conductivity(
+            conductivity_for_compensation, last_ph_data_.temperature());
         ec_msg.set_conductivity(specific_conductivity);
     }
-    if (last_ph_data_.has_temperature() && last_pressure_adjusted_data_.has_pressure_adjusted())
+    if (last_ph_data_.has_temperature() && last_pressure_adjusted_data_.has_pressure_adjusted() &&
+        ec_data.has_conductivity_raw())
     {
         const double ATMOSPHERIC_PRESSURE_DECIBARS = 10.1325;
         const double salinity = calculate_derived_salinity(
-            ec_msg.conductivity_raw(), last_ph_data_.temperature(),
+            conductivity_for_compensation, last_ph_data_.temperature(),
             last_pressure_adjusted_data_.pressure_adjusted() + ATMOSPHERIC_PRESSURE_DECIBARS);
         ec_msg.set_salinity(salinity);
     }

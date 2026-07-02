@@ -26,6 +26,7 @@ import "goby/middleware/protobuf/app_config.proto";
 import "goby/zeromq/protobuf/interprocess_config.proto";
 import "goby/middleware/protobuf/serial_config.proto";
 import "jaiabot/messages/sensor/turner__c_fluor.proto";
+import "jaiabot/messages/sensor/hampel_filter_config.proto";
 
 package jaiabot.config;
 
@@ -34,6 +35,8 @@ message AtlasOEMECThreadConfig
     optional int32 sample_rate = 1 [default = 10];
     optional int32 report_timeout_seconds = 2 [default = 20];
     optional int32 resend_cfg_timeout_seconds = 3 [default = 20];
+    optional jaiabot.sensor.protobuf.HampelFilterConfig conductivity_filter = 10;
+    optional jaiabot.sensor.protobuf.HampelFilterConfig salinity_filter = 11;
 }
 
 message BlueRoboticsBar30ThreadConfig
@@ -41,6 +44,8 @@ message BlueRoboticsBar30ThreadConfig
     optional int32 sample_rate = 1 [default = 10];
     optional int32 report_timeout_seconds = 2 [default = 20];
     optional int32 resend_cfg_timeout_seconds = 3 [default = 20];
+    optional jaiabot.sensor.protobuf.HampelFilterConfig pressure_filter = 10;
+    optional jaiabot.sensor.protobuf.HampelFilterConfig temperature_filter = 11;
 }
 
 message AtlasOEMPHThreadConfig
@@ -48,6 +53,8 @@ message AtlasOEMPHThreadConfig
     optional int32 sample_rate = 1 [default = 10];
     optional int32 report_timeout_seconds = 2 [default = 20];
     optional int32 resend_cfg_timeout_seconds = 3 [default = 20];
+    optional jaiabot.sensor.protobuf.HampelFilterConfig ph_filter = 10;
+    optional jaiabot.sensor.protobuf.HampelFilterConfig temperature_filter = 11;
 }
 
 message AtlasOEMDOThreadConfig
@@ -55,6 +62,8 @@ message AtlasOEMDOThreadConfig
     optional int32 sample_rate = 1 [default = 10];
     optional int32 report_timeout_seconds = 2 [default = 20];
     optional int32 resend_cfg_timeout_seconds = 3 [default = 20];
+    optional jaiabot.sensor.protobuf.HampelFilterConfig do_filter = 10;
+    optional jaiabot.sensor.protobuf.HampelFilterConfig temperature_filter = 11;
 }
 
 message TurnerCFluorThreadConfig
@@ -63,6 +72,7 @@ message TurnerCFluorThreadConfig
     optional int32 report_timeout_seconds = 2 [default = 20];
     optional int32 resend_cfg_timeout_seconds = 3 [default = 20];
     optional jaiabot.sensor.protobuf.FluorCoefficients fluorometer_coefficients = 4;
+    optional jaiabot.sensor.protobuf.HampelFilterConfig concentration_filter = 10;
 }
 
 message AMLThreadConfig
@@ -70,6 +80,8 @@ message AMLThreadConfig
     optional int32 sample_rate = 1 [default = 10];
     optional int32 report_timeout_seconds = 2 [default = 20];
     optional int32 resend_cfg_timeout_seconds = 3 [default = 20];
+    optional jaiabot.sensor.protobuf.HampelFilterConfig conductivity_filter = 10;
+    optional jaiabot.sensor.protobuf.HampelFilterConfig temperature_filter = 11;
 }
 
 message Sensors
