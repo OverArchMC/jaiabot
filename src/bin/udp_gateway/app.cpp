@@ -31,8 +31,6 @@
 #include "jaiabot/groups.h"
 #include "jaiabot/messages/health.pb.h"
 #include "jaiabot/messages/udp_gateway.pb.h"
-#include "jaiabot/utils/hampel_filter.h"
-#include "jaiabot/utils/hampel_filter_config_util.h"
 
 using goby::glog;
 using namespace std;
@@ -95,8 +93,6 @@ class UDPGateway
         goby::time::SteadyClock::now()};
     goby::middleware::protobuf::UDPEndPoint echo_udp_src_;
     goby::middleware::protobuf::UDPEndPoint ppk_udp_src_;
-    jaiabot::utils::HampelFilter pressure_filter_;
-    jaiabot::utils::HampelFilter temperature_filter_;
 };
 
 } // namespace apps
@@ -121,16 +117,6 @@ jaiabot::apps::UDPGateway::UDPGateway()
         goby::middleware::io::UDPOneToManyThread<udp_gateway_in, udp_gateway_out>;
     launch_thread<UDPThread>(cfg().udp_config());
 
-    if (cfg().has_pressure_filter())
-    {
-        pressure_filter_ = jaiabot::utils::HampelFilter(
-            jaiabot::utils::hampel_filter_config_from_proto(cfg().pressure_filter()));
-    }
-    if (cfg().has_temperature_filter())
-    {
-        temperature_filter_ = jaiabot::utils::HampelFilter(
-            jaiabot::utils::hampel_filter_config_from_proto(cfg().temperature_filter()));
-    }
 
     glog.is_verbose() && glog << "Config : " << cfg().ShortDebugString() << endl;
 
@@ -198,14 +184,6 @@ void jaiabot::apps::UDPGateway::process_received_envelope(const jaiabot::protobu
                 double pressure_raw = envelope.pressure_temperature_data().pressure_raw();
                 pressure_temperature_data.set_pressure_raw_with_units(pressure_raw * si::milli *
                                                                       goby::util::seawater::bar);
-
-                double filtered_pressure;
-                if (pressure_filter_.filter(pressure_raw, filtered_pressure) !=
-                    jaiabot::utils::HampelFilterResult::OUTLIER)
-                {
-                    pressure_temperature_data.set_pressure_filtered_with_units(
-                        filtered_pressure * si::milli * goby::util::seawater::bar);
-                }
             }
 
             if (envelope.pressure_temperature_data().has_temperature())
@@ -213,15 +191,6 @@ void jaiabot::apps::UDPGateway::process_received_envelope(const jaiabot::protobu
                 double temperature = pressure_temperature_data.temperature();
                 pressure_temperature_data.set_temperature_with_units(
                     temperature * boost::units::absolute<boost::units::celsius::temperature>());
-
-                double filtered_temperature;
-                if (temperature_filter_.filter(temperature, filtered_temperature) !=
-                    jaiabot::utils::HampelFilterResult::OUTLIER)
-                {
-                    pressure_temperature_data.set_temperature_filtered_with_units(
-                        filtered_temperature *
-                        boost::units::absolute<boost::units::celsius::temperature>());
-                }
             }
             interprocess().publish<jaiabot::groups::pressure_temperature>(
                 pressure_temperature_data);

@@ -1162,19 +1162,11 @@ void jaiabot::apps::Fusion::detect_bot_horizontal(const double& pitch)
 jaiabot::protobuf::SalinityData jaiabot::apps::Fusion::process_salinity_data(const jaiabot::protobuf::SalinityData& salinity_data) {
     jaiabot::protobuf::SalinityData processed_data = salinity_data;
 
-    const double conductivity_for_compensation = salinity_data.has_conductivity_filtered()
-                                                     ? salinity_data.conductivity_filtered()
-                                                     : salinity_data.conductivity_raw();
-    const double temperature_for_compensation =
-        last_pressure_temperature_data_.has_temperature_filtered()
-            ? last_pressure_temperature_data_.temperature_filtered()
-            : last_pressure_temperature_data_.temperature();
-
     // TODO: Move these calculations to the jaiabot_fusion app?
     if (last_pressure_temperature_data_.has_temperature())
     {
         const double specific_conductivity = calculate_specific_conductivity(
-            conductivity_for_compensation, temperature_for_compensation);
+            salinity_data.conductivity_raw(), last_pressure_temperature_data_.temperature());
         processed_data.set_conductivity(specific_conductivity);
     }
 
@@ -1183,7 +1175,7 @@ jaiabot::protobuf::SalinityData jaiabot::apps::Fusion::process_salinity_data(con
     {
         const double ATMOSPHERIC_PRESSURE_DECIBARS = 10.1325;
         const double salinity = calculate_derived_salinity(
-            conductivity_for_compensation, temperature_for_compensation,
+            salinity_data.conductivity_raw(), last_pressure_temperature_data_.temperature(),
             last_pressure_adjusted_data_.pressure_adjusted() +
                 ATMOSPHERIC_PRESSURE_DECIBARS);
         processed_data.set_salinity(salinity);

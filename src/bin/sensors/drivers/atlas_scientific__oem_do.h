@@ -28,7 +28,6 @@
 #include "jaiabot/messages/sensor/atlas_scientific__oem_do.pb.h"
 #include "jaiabot/messages/sensor/salinity.pb.h"
 #include "jaiabot/messages/sensor/sensor_core.pb.h"
-#include "jaiabot/utils/hampel_filter.h"
 #include <goby/zeromq/application/multi_thread.h>
 
 namespace jaiabot
@@ -53,8 +52,6 @@ class AtlasScientificOEMDODriver
     int32_t report_timeout_{20};
     int32_t resend_cfg_timeout_{20};
     sensor::protobuf::AtlasScientificOEMEC last_salinity_reading_;
-    jaiabot::utils::HampelFilter do_filter_;
-    jaiabot::utils::HampelFilter temperature_filter_;
 };
 
 } // namespace apps

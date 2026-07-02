@@ -15,6 +15,4 @@ message SalinityData
     optional double total_dissolved_solids = 3;
     optional double salinity_raw = 4;
     optional double salinity = 5;
-    optional double conductivity_filtered = 6;
-    optional double salinity_filtered = 7;
 }

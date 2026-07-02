@@ -1,6 +1,6 @@
 # Sensor Data Filtering
 
-JaiaBots apply a live **Hampel filter** to remove outlier sensor readings during a mission. Raw readings are always preserved; filtered values are published separately so downstream consumers and log analysis can tell when a sample was rejected.
+JaiaBots use a **Hampel filter** to remove outlier sensor readings. The approved design applies filtering live during a mission: raw readings are always preserved, and filtered values are published separately so downstream consumers can tell when a sample was rejected.
 
 See also: [Sensors and Data Processing](page014_sensors.md)
 
@@ -32,14 +32,14 @@ For each incoming scalar sample `x_i`, the filter maintains a sliding window of 
 
 Window size `W = 7`, threshold `k = 3`, stable readings near `1.0`, then a spike:
 
-| Step | Sample | Window (incl. sample) | Median | MAD | Outlier? | Filtered field |
-|------|--------|------------------------|--------|-----|----------|----------------|
+| Step | Sample | Window (incl. sample) | Median | MAD | Outlier? | Filtered output |
+|------|--------|------------------------|--------|-----|----------|-----------------|
 | 1–6 | 1.0 | fewer than 7 samples | — | — | No (warmup) | 1.0 |
 | 7 | 1.0 | seven 1.0 values | 1.0 | 0.0 | No | 1.0 |
 | 8 | 100.0 | six 1.0 + 100.0 | 1.0 | 0.0 | Yes | omitted |
 | 9 | 1.0 | six 1.0 + 1.0 | 1.0 | 0.0 | No | 1.0 |
 
-The spike at step 8 is logged in the raw field but omitted from the filtered field.
+The spike at step 8 would remain in the raw field but be omitted from the filtered output.
 
 ## Complexity
 
@@ -47,13 +47,13 @@ The spike at step 8 is logged in the raw field but omitted from the filtered fie
 |----------|-----------|-------|
 | Time | **O(W log W)** | Sort-based median on a window of size `W` |
 | Space | **O(W)** | Circular buffer per filter instance |
-| Instances | One filter per scalar field | e.g. Bar30 uses separate filters for pressure and temperature |
+| Instances | One filter per scalar field | e.g. Bar30 would use separate filters for pressure and temperature |
 
 For `n` samples over a mission: **O(n × W log W)** total. With default `W = 7` and typical sample rates (10 Hz), cost is negligible on the Raspberry Pi.
 
 ## Configuration
 
-Filter settings are defined in `jaiabot.sensor.protobuf.HampelFilterConfig`:
+`HampelFilterConfig` in `jaiabot::utils`:
 
 | Field | Default | Description |
 |-------|---------|-------------|
@@ -61,21 +61,11 @@ Filter settings are defined in `jaiabot.sensor.protobuf.HampelFilterConfig`:
 | `window_size` | `7` | Sliding window length (must be odd, ≥ 3) |
 | `mad_threshold` | `3.0` | Multiplier `k` in `k × MAD` |
 
-Per-sensor overrides are set in each driver thread config under `jaiabot_sensors`, or in `jaiabot_udp_gateway` for HYDRO pressure/temperature data.
-
-## Raw vs filtered fields
-
-| Field pattern | Meaning |
-|---------------|---------|
-| `*_raw` or unqualified sensor reading | Actual value from hardware |
-| `*_filtered` | Value after Hampel acceptance; omitted when sample is an outlier |
-
-In HDF5 logs and the Jaia Data Visualizer, a missing filtered field at a timestamp indicates that sample was rejected as an outlier while the raw value was still recorded.
-
 ## Implementation
 
 - Utility: `src/lib/utils/hampel_filter.h`
-- Config proto: `src/lib/messages/sensor/hampel_filter_config.proto`
-- Applied live in `jaiabot_sensors` drivers and `jaiabot_udp_gateway`
+- Tests: `src/test/utils/test.cpp`
+
+Sensor driver integration is planned as a follow-up.
 
 **Reference:** Hampel, F.R. (1974). The influence curve and its role in robust estimation.

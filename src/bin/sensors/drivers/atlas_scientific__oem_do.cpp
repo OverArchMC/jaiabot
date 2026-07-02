@@ -25,8 +25,6 @@
 #include "atlas_scientific__oem_do.h"
 #include "jaiabot/groups.h"
 #include "jaiabot/utils/dissolved_oxygen_compensation.h"
-#include "jaiabot/utils/hampel_filter.h"
-#include "jaiabot/utils/hampel_filter_config_util.h"
 
 using goby::glog;
 
@@ -55,17 +53,6 @@ jaiabot::apps::AtlasScientificOEMDODriver::AtlasScientificOEMDODriver(
     report_timeout_ = config.report_timeout_seconds();
     resend_cfg_timeout_ = config.resend_cfg_timeout_seconds();
 
-    if (config.has_do_filter())
-    {
-        do_filter_ = jaiabot::utils::HampelFilter(
-            jaiabot::utils::hampel_filter_config_from_proto(config.do_filter()));
-    }
-    if (config.has_temperature_filter())
-    {
-        temperature_filter_ = jaiabot::utils::HampelFilter(
-            jaiabot::utils::hampel_filter_config_from_proto(config.temperature_filter()));
-    }
-
     // configure our sensor
     send_cfg();
 }
@@ -80,24 +67,10 @@ void jaiabot::apps::AtlasScientificOEMDODriver::receive_data(
     if (do_data.has_do_raw())
     {
         do_msg.set_do_raw(do_data.do_raw());
-
-        double filtered_do;
-        if (do_filter_.filter(do_data.do_raw(), filtered_do) !=
-            jaiabot::utils::HampelFilterResult::OUTLIER)
-        {
-            do_msg.set_do_filtered(filtered_do);
-        }
     }
     if (do_data.has_temperature())
     {
         do_msg.set_temperature(do_data.temperature());
-
-        double filtered_temperature;
-        if (temperature_filter_.filter(do_data.temperature(), filtered_temperature) !=
-            jaiabot::utils::HampelFilterResult::OUTLIER)
-        {
-            do_msg.set_temperature_filtered(filtered_temperature);
-        }
     }
     if (do_data.has_temperature_voltage())
     {
@@ -110,21 +83,15 @@ void jaiabot::apps::AtlasScientificOEMDODriver::receive_data(
                                  << "Creating DO solubility/sat percent/normalized solubility"
                                  << std::endl;
 
-        const double do_for_compensation =
-            do_msg.has_do_filtered() ? do_msg.do_filtered() : do_msg.do_raw();
-        const double temperature_for_compensation = do_msg.has_temperature_filtered()
-                                                        ? do_msg.temperature_filtered()
-                                                        : do_msg.temperature();
-
         // DO Solubility (mg/L) at current temperature (C), salinity (ppt), and pressure (mmhg)
         double do_solubility = calculate_dissolved_oxygen_solubility(
-            temperature_for_compensation, last_salinity_reading_.salinity());
+            do_data.temperature(), last_salinity_reading_.salinity());
         // Measured DO / DO Solubility at current temperature (C), salinity (ppt), and pressure (mmhg)
         double do_saturation_percent =
-            calculate_do_saturation_percent(do_for_compensation, do_solubility);
+            calculate_do_saturation_percent(do_data.do_raw(), do_solubility);
         // DO Solubility at 0 salinity (ppt), same temperature (C) and pressure (mmhg), scaled by observed saturation
         double do_normalized_solubility =
-            calculate_dissolved_oxygen_solubility(temperature_for_compensation, 0.0) *
+            calculate_dissolved_oxygen_solubility(do_data.temperature(), 0.0) *
             (do_saturation_percent / 100.0);
 
         do_msg.set_do_solubility(do_solubility);

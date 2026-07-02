@@ -20,8 +20,6 @@ message AtlasScientificOEMDO
     optional double do_normalized_solubility = 4;
     optional double temperature = 5;
     optional double temperature_voltage = 6;
-    optional double do_filtered = 7;
-    optional double temperature_filtered = 8;
 }
 
 

@@ -15,8 +15,6 @@ message AtlasScientificOEMpH
     optional double ph = 2;
     optional double temperature = 3;
     optional double temperature_voltage = 4;
-    optional double ph_filtered = 5;
-    optional double temperature_filtered = 6;
 }
 
 

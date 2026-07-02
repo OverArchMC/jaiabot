@@ -25,8 +25,6 @@
 
 #include "jaiabot/groups.h"
 #include "jaiabot/messages/sensor/configuration.pb.h"
-#include "jaiabot/utils/hampel_filter.h"
-#include "jaiabot/utils/hampel_filter_config_util.h"
 #include "turner__c_fluor.h"
 #include <google/protobuf/text_format.h>
 
@@ -56,11 +54,6 @@ jaiabot::apps::TurnerCFluorDriver::TurnerCFluorDriver(
     {
         fluorometer_coefficients_ = config.fluorometer_coefficients();
     }
-    if (config.has_concentration_filter())
-    {
-        concentration_filter_ = jaiabot::utils::HampelFilter(
-            jaiabot::utils::hampel_filter_config_from_proto(config.concentration_filter()));
-    }
 
     // Configure our sensor
     send_cfg();
@@ -76,14 +69,6 @@ void jaiabot::apps::TurnerCFluorDriver::receive_data(
     if (turner_c_fluor_data.has_concentration())
     {
         turner_c_fluor_msg.set_concentration(turner_c_fluor_data.concentration());
-
-        double filtered_concentration;
-        if (concentration_filter_.filter(turner_c_fluor_data.concentration(),
-                                         filtered_concentration) !=
-            jaiabot::utils::HampelFilterResult::OUTLIER)
-        {
-            turner_c_fluor_msg.set_concentration_filtered(filtered_concentration);
-        }
     }
     if (turner_c_fluor_data.has_concentration_voltage())
     {

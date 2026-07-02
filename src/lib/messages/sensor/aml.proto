@@ -22,10 +22,4 @@ message AML {
     optional double temperature = 3 [(dccl.field) = {
         units { derived_dimensions: "temperature" system: "celsius" }
     }];;
-    optional double conductivity_filtered = 4 [(dccl.field) = {
-        units { derived_dimensions: "conductivity" system: "si" }
-    }];
-    optional double temperature_filtered = 5 [(dccl.field) = {
-        units { derived_dimensions: "temperature" system: "celsius" }
-    }];
 }
