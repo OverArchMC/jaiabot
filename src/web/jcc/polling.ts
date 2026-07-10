@@ -2,6 +2,10 @@ import { bots } from "../data/bots/bots";
 import { hubs } from "../data/hubs/hubs";
 import { jaiaGlobal } from "../data/jaia_global/jaia-global";
 import { taskPackets } from "../data/task_packets/task-packets";
+import {
+    fetchTaskPackets,
+    getActiveTaskPacketQueryUrl,
+} from "../data/task_packets/task-packet-fetch";
 import { PortalBotStatus, PortalHubStatus } from "../shared/PortalStatus";
 import { botLayer } from "../openlayers/layers/vector/bot-layer";
 import { hubLayer } from "../openlayers/layers/vector/hub-layer";
@@ -22,7 +26,6 @@ const CONGESTION_WARNING = "congestion-warning";
 const HUB_CONNECTION_ERROR = "Connection Dropped To HUB";
 
 const STATUS_URL = "/jaia/v0/status";
-const TASK_PACKET_URL = "/jaia/v0/task-packets";
 const TASK_PACKET_VERSION_URL = "/jaia/v0/task-packets-version";
 const METADATA_URL = "/jaia/v0/metadata";
 const GITHUB_URL = "https://api.github.com/repos/jaiarobotics/jaiabot/releases/latest";
@@ -98,11 +101,7 @@ export async function pollTaskPackets() {
         } else {
             const version = await versionRes.json();
             if (version !== taskPackets.getVersion()) {
-                const taskPacketRes = await fetch(TASK_PACKET_URL);
-                const json = await taskPacketRes.json();
-                taskPackets.setIncludedTaskPackets(json.result.included);
-                taskPackets.setExcludedTaskPackets(json.result.excluded);
-                updateTaskLayers();
+                await fetchTaskPackets(getActiveTaskPacketQueryUrl());
                 taskPackets.setVersion(version);
             }
         }

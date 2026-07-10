@@ -11,9 +11,11 @@ import { accordionTheme } from "../../../utils/style";
 import Accordion from "@mui/material/Accordion";
 import Typography from "@mui/material/Typography";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ManageSearchIcon from "@mui/icons-material/ManageSearch";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import Checkbox from "@mui/material/Checkbox";
+import IconButton from "@mui/material/IconButton";
 import { Radio, ThemeProvider } from "@mui/material";
 import { grey } from "@mui/material/colors";
 
@@ -21,6 +23,10 @@ import "./LayerSwitcherMenu.less";
 
 interface Props {
     style: { [key: string]: {} };
+}
+
+interface LayerSwitcherMenuProps {
+    onOpenTaskPacketFilter: () => void;
 }
 
 const BASE_MAPS = [
@@ -32,7 +38,7 @@ const BASE_MAPS = [
 /**
  * Creates the accordions for toggling the visibility of map layers
  */
-export default function LayerSwitcherMenu() {
+export default function LayerSwitcherMenu(props: LayerSwitcherMenuProps) {
     const jaiaContext = useContext(JaiaContext);
     const jaiaDispatch = useContext(JaiaDispatchContext);
 
@@ -252,6 +258,17 @@ export default function LayerSwitcherMenu() {
                 >
                     <AccordionSummary className="accordion-summary" expandIcon={<ExpandMoreIcon />}>
                         <Typography>Measurements</Typography>
+                        <IconButton
+                            className="task-packet-filter-button"
+                            aria-label="task-packet-filter"
+                            size="small"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                props.onOpenTaskPacketFilter();
+                            }}
+                        >
+                            <ManageSearchIcon fontSize="small" />
+                        </IconButton>
                     </AccordionSummary>
                     <AccordionDetails className="layer-group">
                         <div className="layer-container">

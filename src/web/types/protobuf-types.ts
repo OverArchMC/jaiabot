@@ -1096,6 +1096,7 @@ export interface TaskPacket {
     start_time?: number;
     end_time?: number;
     type?: TaskType;
+    mission_name?: string;
     dive?: DivePacket;
     drift?: DriftPacket;
 }
