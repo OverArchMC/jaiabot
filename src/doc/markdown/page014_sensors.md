@@ -17,7 +17,9 @@ Implementing this pipeline is a work in progress, but the overall vision for the
 
 The MCU should do the minimum amount of processing required to provide raw data to the `jaiabot_sensors` application. Any empirical calculations (e.g. conductivity to salinity, CTP to sound speed, etc.) should be done in the `jaiabot_sensors` driver. This is intended to keep the MCU code as simple as possible and high performance.
 
-All data processing, metadata tagging, applying calibration, QA/QC is done in `jaiabot_sensors`.
+All data processing, metadata tagging, applying calibration, QA/QC is done in the `jaiabot_sensors` application.
+
+Outlier rejection will use a [Hampel filter](page015_sensor_data_filtering.md); the utility is available in `src/lib/utils/hampel_filter.h`.
 
 ## Communication with MCU
 
