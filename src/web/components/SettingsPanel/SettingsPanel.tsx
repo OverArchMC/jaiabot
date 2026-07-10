@@ -13,6 +13,7 @@ import Engineering from "./Engineering/Engineering";
 import OfflineMaps from "./OfflineMaps/OfflineMaps";
 import QueryBotStatus from "./QueryBotStatus/QueryBotStatus";
 import LayerSwitcherMenu from "./LayerSwitcherMenu/LayerSwitcherMenu";
+import TaskPacketFilterPanel from "./TaskPacketFilterPanel/TaskPacketFilterPanel";
 import { trackPod } from "../../openlayers/controls/track-pod";
 import { CoordinateSystem } from "../../types/jaia-system-types";
 import { accordionTheme, addDropdownListener } from "../../utils/style";
@@ -31,6 +32,7 @@ export default function SettingsPanel() {
     const jaiaContext = useContext(JaiaContext);
     const jaiaDispatch = useContext(JaiaDispatchContext);
     const [isTrackingPod, setIsTrackingPod] = useState(trackPod.isTracking());
+    const [isTaskPacketFilterOpen, setIsTaskPacketFilterOpen] = useState(false);
 
     useEffect(() => {
         addDropdownListener("accordion-container", "settings-accordions-container");
@@ -87,73 +89,83 @@ export default function SettingsPanel() {
     };
 
     return (
-        <div className="jaia-panel settings-panel">
-            <div className="jaia-panel-title">Settings</div>
-            <div className="settings-row">
-                <div className="settings-label">Track Pod:</div>
-                <JaiaToggle checked={() => isTrackingPod} onClick={handleTrackPodToggleClick} />
-            </div>
-            <div className="coordinate-system-container">
-                <button
-                    className={getCoordinateButtonClassName(CoordinateSystem.LAT_LON)}
-                    onClick={() => handleCoordinateSystemClick(CoordinateSystem.LAT_LON)}
-                >
-                    Lat / Lon
-                </button>
-                <button
-                    className={getCoordinateButtonClassName(CoordinateSystem.MGRS)}
-                    onClick={() => handleCoordinateSystemClick(CoordinateSystem.MGRS)}
-                >
-                    MGRS
-                </button>
-            </div>
-            <div className="accordions-container" id="settings-accordions-container">
-                <ThemeProvider theme={accordionTheme}>
-                    <Accordion className="accordion-container">
-                        <AccordionSummary
-                            expandIcon={<ExpandMoreIcon />}
-                            className="accordion-summary"
-                        >
-                            <Typography>Map Layers</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                            <LayerSwitcherMenu />
-                        </AccordionDetails>
-                    </Accordion>
+        <div className="settings-panel-container">
+            {isTaskPacketFilterOpen && <TaskPacketFilterPanel />}
+            <div className="jaia-panel settings-panel">
+                <div className="jaia-panel-title">Settings</div>
+                <div className="settings-row">
+                    <div className="settings-label">Track Pod:</div>
+                    <JaiaToggle checked={() => isTrackingPod} onClick={handleTrackPodToggleClick} />
+                </div>
+                <div className="coordinate-system-container">
+                    <button
+                        className={getCoordinateButtonClassName(CoordinateSystem.LAT_LON)}
+                        onClick={() => handleCoordinateSystemClick(CoordinateSystem.LAT_LON)}
+                    >
+                        Lat / Lon
+                    </button>
+                    <button
+                        className={getCoordinateButtonClassName(CoordinateSystem.MGRS)}
+                        onClick={() => handleCoordinateSystemClick(CoordinateSystem.MGRS)}
+                    >
+                        MGRS
+                    </button>
+                </div>
+                <div className="accordions-container" id="settings-accordions-container">
+                    <ThemeProvider theme={accordionTheme}>
+                        <Accordion className="accordion-container">
+                            <AccordionSummary
+                                expandIcon={<ExpandMoreIcon />}
+                                className="accordion-summary"
+                            >
+                                <Typography>Map Layers</Typography>
+                            </AccordionSummary>
+                            <AccordionDetails>
+                                <LayerSwitcherMenu
+                                    onOpenTaskPacketFilter={() =>
+                                        setIsTaskPacketFilterOpen((isOpen) => !isOpen)
+                                    }
+                                />
+                            </AccordionDetails>
+                        </Accordion>
 
-                    <Accordion className="accordion-container-engineering">
-                        <AccordionSummary
-                            expandIcon={<ExpandMoreIcon />}
-                            className="accordion-summary"
-                        >
-                            <Typography>Engineering</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails className="engineering-accordion-details">
-                            <button className="engineering-button" onClick={() => handleJEDClick()}>
-                                Jaia Engineering & Debug
-                            </button>
-                            <Engineering />
-                            <QueryBotStatus />
-                            <ScanForBot />
-                        </AccordionDetails>
-                    </Accordion>
+                        <Accordion className="accordion-container-engineering">
+                            <AccordionSummary
+                                expandIcon={<ExpandMoreIcon />}
+                                className="accordion-summary"
+                            >
+                                <Typography>Engineering</Typography>
+                            </AccordionSummary>
+                            <AccordionDetails className="engineering-accordion-details">
+                                <button
+                                    className="engineering-button"
+                                    onClick={() => handleJEDClick()}
+                                >
+                                    Jaia Engineering & Debug
+                                </button>
+                                <Engineering />
+                                <QueryBotStatus />
+                                <ScanForBot />
+                            </AccordionDetails>
+                        </Accordion>
 
-                    <Accordion className="accordion-container">
-                        <AccordionSummary
-                            expandIcon={<ExpandMoreIcon />}
-                            className="accordion-summary"
-                        >
-                            <Typography>Offline Maps</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                            <OfflineMaps />
-                        </AccordionDetails>
-                    </Accordion>
+                        <Accordion className="accordion-container">
+                            <AccordionSummary
+                                expandIcon={<ExpandMoreIcon />}
+                                className="accordion-summary"
+                            >
+                                <Typography>Offline Maps</Typography>
+                            </AccordionSummary>
+                            <AccordionDetails>
+                                <OfflineMaps />
+                            </AccordionDetails>
+                        </Accordion>
 
-                    <SimulationAccordion
-                        isSimulation={jaiaContext.jaiaGlobal.getMetadata()?.is_simulation}
-                    />
-                </ThemeProvider>
+                        <SimulationAccordion
+                            isSimulation={jaiaContext.jaiaGlobal.getMetadata()?.is_simulation}
+                        />
+                    </ThemeProvider>
+                </div>
             </div>
         </div>
     );

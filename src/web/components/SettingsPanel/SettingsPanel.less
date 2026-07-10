@@ -1,6 +1,18 @@
 @import "../../style/stylesheets/vars.less";
 
-.settings-panel {
+.settings-panel-container {
+    position: absolute;
+    top: @panel-top;
+    right: @panel-right;
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: flex-start;
+    gap: 8px;
+    z-index: @jaia-panel-z-index;
+}
+
+.settings-panel-container .settings-panel {
+    position: static;
     display: flex;
     flex-direction: column;
     row-gap: 15px;

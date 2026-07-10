@@ -17,7 +17,7 @@ class DiveLayer extends JaiaVectorLayer {
     override updateFeatures() {
         let source = this.getVectorLayer().getSource();
         source.clear();
-        for (let taskPacket of taskPackets.getIncludedTaskPackets()) {
+        for (let taskPacket of taskPackets.getMapIncludedTaskPackets()) {
             if (taskPacket.dive) {
                 const diveFeature = generateDiveFeature(taskPacket);
                 source.addFeature(diveFeature);

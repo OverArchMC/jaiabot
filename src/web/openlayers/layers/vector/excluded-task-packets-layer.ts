@@ -25,7 +25,7 @@ class ExcludedTaskPacketsLayer extends JaiaVectorLayer {
     override updateFeatures() {
         let source = this.getVectorLayer().getSource();
         source.clear();
-        for (const taskPacket of taskPackets.getExcludedTaskPackets()) {
+        for (const taskPacket of taskPackets.getMapExcludedTaskPackets()) {
             if (taskPacket.dive) {
                 const diveFeature = generateDiveFeature(taskPacket);
                 source.addFeature(diveFeature);

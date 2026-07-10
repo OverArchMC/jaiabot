@@ -1,4 +1,5 @@
 import { TaskPacket } from "../../types/protobuf-types";
+import { taskPacketFilter } from "./task-packet-filter";
 
 export class TaskPackets {
     private includedTaskPackets: TaskPacket[];
@@ -12,6 +13,18 @@ export class TaskPackets {
 
     getIncludedTaskPackets() {
         return this.includedTaskPackets;
+    }
+
+    getMapIncludedTaskPackets() {
+        return this.includedTaskPackets.filter((taskPacket) =>
+            taskPacketFilter.includesPacket(taskPacket),
+        );
+    }
+
+    getMapExcludedTaskPackets() {
+        return this.excludedTaskPackets.filter((taskPacket) =>
+            taskPacketFilter.includesPacket(taskPacket),
+        );
     }
 
     setIncludedTaskPackets(taskPackets: TaskPacket[]) {

@@ -1,0 +1,102 @@
+@import "../../../style/stylesheets/vars.less";
+
+.task-packet-filter-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 320px;
+    max-height: @panel-max-height;
+    overflow-y: auto;
+    color: #fff;
+}
+
+.filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.filter-field label {
+    font-weight: 600;
+}
+
+.filter-field input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid @panel-accent-color;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #000;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.filter-actions button {
+    all: unset;
+    box-sizing: border-box;
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #fff;
+    border-radius: 5px;
+    color: #fff;
+    text-align: center;
+    cursor: pointer;
+}
+
+.filter-actions button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.filter-error {
+    color: @error-color;
+    font-size: 0.9rem;
+}
+
+.mission-results {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.mission-result-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    cursor: pointer;
+}
+
+.mission-result-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 6px;
+}
+
+.mission-result-name {
+    font-weight: 600;
+}
+
+.mission-result-meta {
+    font-size: 0.85rem;
+    color: @panel-accent-color;
+}
+
+.time-slider-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.time-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: @panel-accent-color;
+}

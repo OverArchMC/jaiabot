@@ -3,6 +3,7 @@ import { LayerTitles } from "../../../types/openlayers-types";
 import { layersZIndexes } from "../zindex";
 import { jaiaAPI } from "../../../utils/jaia-api";
 import { generateContourFeatures } from "../../features/contour-feature";
+import { getDateRangeQueryParams } from "../../../data/task_packets/task-packet-fetch";
 
 class ContourLayer extends JaiaVectorLayer {
     constructor() {
@@ -10,8 +11,9 @@ class ContourLayer extends JaiaVectorLayer {
     }
 
     override updateFeatures() {
+        const dateRange = getDateRangeQueryParams();
         jaiaAPI
-            .getDepthContours()
+            .getDepthContours(dateRange.startDate, dateRange.endDate)
             .then((geoJSON) => {
                 const features = generateContourFeatures(geoJSON);
                 const source = this.getVectorLayer().getSource();

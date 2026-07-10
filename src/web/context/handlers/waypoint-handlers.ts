@@ -1,6 +1,5 @@
 import { jaiaGlobal } from "../../data/jaia_global/jaia-global";
 import { missionSet } from "../../data/mission_set/mission-set";
-import { taskPackets } from "../../data/task_packets/task-packets";
 import { GridPlanningStates } from "../../data/survey_planner/grid-plan";
 import { gridLayer } from "../../openlayers/layers/vector/grid-layer";
 import { missionLayer } from "../../openlayers/layers/vector/mission-layer";
@@ -17,7 +16,10 @@ import { jaiaAPI } from "../../utils/jaia-api";
 import { MAX_WAYPOINTS, UNASSIGNED_ID } from "../../utils/constants";
 import { isLocationBlockedByZone } from "../../data/exclusion_zones/exclusion-zone-router";
 import { detectMissionReroutes } from "../../data/exclusion_zones/exclusion-zone-detection";
-import { syncTaskLayers } from "./handler-utils";
+import {
+    fetchTaskPackets,
+    getActiveTaskPacketQueryUrl,
+} from "../../data/task_packets/task-packet-fetch";
 import cloneDeep from "lodash/cloneDeep";
 
 /**
@@ -316,11 +318,9 @@ export function handleChangeTaskPacketVisibility(
     action: JaiaAction,
 ) {
     const include = action.taskPacketVisibility === TaskPacketVisibility.INCLUDE;
-    jaiaAPI.postTaskPacketInclude(action.taskPacketID, include).then((response) => {
-        jaiaAPI.getTaskPackets().then((response) => {
-            taskPackets.setIncludedTaskPackets(response.result.included);
-            taskPackets.setExcludedTaskPackets(response.result.excluded);
-            syncTaskLayers();
+    jaiaAPI.postTaskPacketInclude(action.taskPacketID, include).then(() => {
+        fetchTaskPackets(getActiveTaskPacketQueryUrl()).catch((error) => {
+            console.error(error);
         });
     });
     return mutableState;
