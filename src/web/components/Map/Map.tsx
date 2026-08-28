@@ -32,6 +32,7 @@ import { gridPlan, GridPlanningStates } from "../../data/survey_planner/grid-pla
 import {
     routeAroundExclusionZones,
     isLocationBlockedByZone,
+    DEFAULT_SAFETY_MARGIN_METERS,
 } from "../../data/exclusion_zones/exclusion-zone-router";
 
 import ZoneCrossingDialog from "../ZoneCrossingDialog/ZoneCrossingDialog";
@@ -494,7 +495,11 @@ export default function Map() {
             // lat/lon values match those produced by detectMissionReroutes,
             // which also uses the first clean waypoint as origin.
             const firstCleanLoc = waypoints.filter((wp) => !wp.getIsBypass())[0]?.getLocation();
-            const result = routeAroundExclusionZones(miniPlan, 5, firstCleanLoc ?? fromLocation);
+            const result = routeAroundExclusionZones(
+                miniPlan,
+                DEFAULT_SAFETY_MARGIN_METERS,
+                firstCleanLoc ?? fromLocation,
+            );
             const locations = result.plan.goal.slice(1).map((g) => g.location!);
 
             // Let the normal waypoint-add handler reject impossible or over-limit
